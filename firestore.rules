@@ -1,0 +1,62 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function validEntry() {
+      return request.resource.data.keys().hasOnly([
+          'descricao',
+          'valor',
+          'tipo',
+          'categoria',
+          'data',
+          'observacao',
+          'criadoEm',
+          'atualizadoEm'
+        ])
+        && request.resource.data.keys().hasAll([
+          'descricao',
+          'valor',
+          'tipo',
+          'categoria',
+          'data',
+          'observacao',
+          'atualizadoEm'
+        ])
+        && request.resource.data.descricao is string
+        && request.resource.data.descricao.size() > 0
+        && request.resource.data.descricao.size() <= 120
+        && request.resource.data.valor is number
+        && request.resource.data.valor > 0
+        && request.resource.data.valor <= 10000000
+        && request.resource.data.tipo in ['entrada', 'despesa']
+        && (
+          (request.resource.data.tipo == 'entrada'
+            && request.resource.data.categoria == 'eventos')
+          ||
+          (request.resource.data.tipo == 'despesa'
+            && request.resource.data.categoria in [
+              'ingredientes',
+              'bebidas',
+              'equipe',
+              'transporte',
+              'equipamentos',
+              'marketing',
+              'taxas',
+              'outros'
+            ])
+        )
+        && request.resource.data.data is timestamp
+        && request.resource.data.observacao is string
+        && request.resource.data.observacao.size() <= 500;
+    }
+
+    match /lancamentos/{lancamentoId} {
+      allow read, delete: if isSignedIn();
+      allow create, update: if isSignedIn() && validEntry();
+    }
+  }
+}

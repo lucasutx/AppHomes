@@ -1,5 +1,5 @@
 name: flutter_application_1
-description: "A new Flutter project."
+description: "Aplicativo oficial da Home's Pizzaria para cardápio e orçamentos."
 version: 1.0.0+1
 
 environment:
@@ -17,6 +17,10 @@ dependencies:
   pdf: ^3.6.0
   printing: ^5.6.0
   path_provider: ^2.0.10
+  firebase_core: ^5.1.0
+  cloud_firestore: ^7.1.0
+  firebase_auth: ^7.0.1
+  shared_preferences: ^2.5.6
   
   
 
@@ -32,7 +36,7 @@ dev_dependencies:
   
 flutter_launcher_icons:
   android: "launcher_icon"
-  image_path: 'assets/images/logo.png'
+  image_path: 'assets/images/logo_colorida.png'
   min_sdk_android: 21 # android min sdk min:16, default 
   
 
@@ -41,32 +45,8 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/01.jpg
-    - assets/images/02.jpg
-    - assets/images/03.jpg
-    - assets/images/04.jpg
-    - assets/images/05.jpg
-    - assets/images/06.jpg
-    - assets/images/07.jpg
-    - assets/images/08.jpg
-    - assets/images/09.jpg
-    - assets/images/10.jpg
-    - assets/images/11.jpg
-    - assets/images/12.jpg
-    - assets/images/13.jpg
-    - assets/images/14.jpg
-    - assets/images/15.jpg
-    - assets/images/16.jpg
-    - assets/images/17.jpg
-    - assets/images/18.jpg
-    - assets/images/20.jpg
-    - assets/images/21.jpg
-    - assets/images/22.jpg
-    - assets/images/icon.png
-    - assets/images/logo.png
-    - assets/images/car1.jpg
-    - assets/images/car2.jpg
-    - assets/images/car3.jpg
+    - assets/images/
+    - assets/docs/
     
 
 

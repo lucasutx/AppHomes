@@ -1,138 +1,193 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'app_shell.dart';
+import 'app_theme.dart';
+
+class _Sabor {
+  const _Sabor(this.nome, this.ingredientes, {this.doce = false});
+  final String nome;
+  final String ingredientes;
+  final bool doce;
+}
+
+const _sabores = [
+  _Sabor(
+      'Calabresa', 'Molho, mussarela, calabresa fatiada, presunto e orégano'),
+  _Sabor('Lombo canadense', 'Molho, lombo canadense, presunto e orégano'),
+  _Sabor('Frango com catupiry',
+      'Molho, mussarela, frango desfiado, catupiry e orégano'),
+  _Sabor(
+      'Caipira', 'Molho, mussarela, frango, bacon, cheddar, milho e orégano'),
+  _Sabor('À moda',
+      'Molho, mussarela, calabresa, presunto, cebola, tomate, pimentão, milho, azeitona e orégano'),
+  _Sabor(
+      '4 queijos', 'Molho, mussarela, catupiry, parmesão, cheddar e orégano'),
+  _Sabor('Bacon', 'Molho, mussarela, bacon, milho e orégano'),
+  _Sabor('4 carnes',
+      'Molho, mussarela, presunto, calabresa, lombo canadense, bacon e orégano'),
+  _Sabor('Alho-poró com bacon',
+      'Molho, mussarela, alho-poró, bacon, catupiry, azeite e orégano'),
+  _Sabor('Jiló com bacon',
+      'Molho, mussarela, jiló, bacon, catupiry, azeite e orégano'),
+  _Sabor('Marguerita',
+      'Molho, mussarela, tomate, parmesão, azeite, manjericão e orégano'),
+  _Sabor('Parmegiana',
+      'Molho, mussarela, presunto, tomate, bacon, parmesão e orégano'),
+  _Sabor('Presunto', 'Molho, mussarela, presunto, azeitona e orégano'),
+  _Sabor('Napolitana', 'Molho, mussarela, presunto, tomate e orégano'),
+  _Sabor('Alho-poró, bacon e abacaxi',
+      'Molho, mussarela, alho-poró, bacon, abacaxi, azeite e orégano'),
+  _Sabor('Lombo com abacaxi e barbecue',
+      'Molho, mussarela, lombo canadense, presunto, abacaxi, barbecue, azeitona e orégano'),
+  _Sabor('Banana', 'Mussarela, banana fatiada, leite condensado e canela',
+      doce: true),
+  _Sabor('Chocolate', 'Brigadeiro e granulado', doce: true),
+  _Sabor('Romeu e Julieta', 'Mussarela e goiabada', doce: true),
+  _Sabor('Duo chocolate', 'Brigadeiro e chocolate branco', doce: true),
+];
 
 class Cardapio extends StatefulWidget {
-  const Cardapio({Key? key}) : super(key: key);
-
+  const Cardapio({super.key});
   @override
   State<Cardapio> createState() => _CardapioState();
 }
 
 class _CardapioState extends State<Cardapio> {
-  int _indiceAtual = 1;
-
-  void _navegar(int index) {
-    setState(() {
-      _indiceAtual = index;
-    });
-
-    switch (index) {
-      case 0:
-        Navigator.pushNamed(context, '/');
-        break;
-      case 1:
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/orcamento');
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/fotos');
-        break;
-      case 4:
-        Navigator.pushNamed(context, '/funcionamento');
-        break;
-    }
-  }
-
-  void _showFullScreenImage(BuildContext context, String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          child: Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(imageUrl),
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+  bool? _doces;
+  String _busca = '';
 
   @override
   Widget build(BuildContext context) {
-    final List<String> photoUrls = [
-      'assets/images/car2.jpg',
-      'assets/images/car3.jpg',
-      'assets/images/car1.jpg',
-    ];
+    final filtrados = _sabores.where((sabor) {
+      final categoria = _doces == null || sabor.doce == _doces;
+      final busca = sabor.nome.toLowerCase().contains(_busca.toLowerCase()) ||
+          sabor.ingredientes.toLowerCase().contains(_busca.toLowerCase());
+      return categoria && busca;
+    }).toList();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(14.0),
-              color: const Color(0xFF800000),
-              
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: photoUrls.length,
-                itemBuilder: (context, index) {
-                  return GestureDetector(
-                    onTap: () {
-                      _showFullScreenImage(context, photoUrls[index]);
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(15),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 8,
-                              offset: const Offset(2, 2))
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(15),
-                        child: AspectRatio(
-                          aspectRatio: 3 / 5, // 🔥 Menor zoom que 16/9
-                          child: Image.asset(
-                            photoUrls[index],
-                            fit: BoxFit.contain, // 🔥 Mostra a imagem inteira sem corte
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
+    return AppShell(
+      currentIndex: 1,
+      child: CustomScrollView(slivers: [
+        const SliverToBoxAdapter(
+            child: PageHeader(
+                eyebrow: 'Feito na hora',
+                title: 'Nosso cardápio',
+                subtitle:
+                    'Sabores clássicos e combinações especiais para agradar todos os convidados.')),
+        SliverToBoxAdapter(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 14),
+                child: Column(children: [
+                  TextField(
+                      onChanged: (value) => setState(() => _busca = value),
+                      decoration: const InputDecoration(
+                          prefixIcon: Icon(Icons.search),
+                          hintText: 'Buscar sabor ou ingrediente')),
+                  const SizedBox(height: 14),
+                  Row(children: [
+                    _Filter(
+                        label: 'Todos',
+                        selected: _doces == null,
+                        onTap: () => setState(() => _doces = null)),
+                    const SizedBox(width: 8),
+                    _Filter(
+                        label: 'Salgadas',
+                        selected: _doces == false,
+                        onTap: () => setState(() => _doces = false)),
+                    const SizedBox(width: 8),
+                    _Filter(
+                        label: 'Doces',
+                        selected: _doces == true,
+                        onTap: () => setState(() => _doces = true)),
+                  ]),
+                ]),
               ),
             ),
-            const SizedBox(height: 10),
-          ],
+          ),
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _indiceAtual,
-        onTap: _navegar,
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF800000),
-        unselectedItemColor: const Color(0xFF800000),
-        selectedLabelStyle: const TextStyle(fontSize: 14),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
-        iconSize: 30,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Início'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.restaurant_menu), label: 'Cardápio'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.payment), label: 'Orçamento'),
-          BottomNavigationBarItem(icon: Icon(Icons.photo), label: 'Fotos'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long), label: 'Funcionamento'),
-        ],
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+          sliver: SliverLayoutBuilder(builder: (context, constraints) {
+            final count = constraints.crossAxisExtent >= 900
+                ? 3
+                : constraints.crossAxisExtent >= 580
+                    ? 2
+                    : 1;
+            return SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: count,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  mainAxisExtent: 184),
+              delegate: SliverChildBuilderDelegate(
+                  (context, index) => _MenuCard(sabor: filtrados[index]),
+                  childCount: filtrados.length),
+            );
+          }),
+        ),
+      ]),
+    );
+  }
+}
+
+class _Filter extends StatelessWidget {
+  const _Filter(
+      {required this.label, required this.selected, required this.onTap});
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      selectedColor: AppColors.red.withValues(alpha: .15),
+      labelStyle: TextStyle(
+          color: selected ? AppColors.red : AppColors.muted,
+          fontWeight: FontWeight.w700));
+}
+
+class _MenuCard extends StatelessWidget {
+  const _MenuCard({required this.sabor});
+  final _Sabor sabor;
+  @override
+  Widget build(BuildContext context) {
+    final color = sabor.doce ? const Color(0xFFB5617A) : AppColors.green;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                    color: color.withValues(alpha: .11),
+                    borderRadius: BorderRadius.circular(13)),
+                child: Icon(
+                    sabor.doce
+                        ? Icons.cake_outlined
+                        : Icons.local_pizza_outlined,
+                    color: color)),
+            const Spacer(),
+            Text(sabor.doce ? 'DOCE' : 'SALGADA',
+                style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.1)),
+          ]),
+          const SizedBox(height: 15),
+          Text(sabor.nome,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 7),
+          Text(sabor.ingredientes,
+              maxLines: 3, overflow: TextOverflow.ellipsis),
+        ]),
       ),
     );
   }

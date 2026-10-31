@@ -1,0 +1,25 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "pizzaria-85c83",
+          "appId": "1:513449221446:android:16677153855949a104d947",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "pizzaria-85c83",
+          "configurations": {
+            "android": "1:513449221446:android:16677153855949a104d947",
+            "web": "1:513449221446:web:9aa583e38953e53904d947"
+          }
+        }
+      }
+    }
+  }
+}

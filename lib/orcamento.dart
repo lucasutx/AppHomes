@@ -1,535 +1,460 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:pdf/pdf.dart';
+import 'app_shell.dart';
+import 'app_theme.dart';
+import 'orcamento_calculator.dart';
 
 class Orcamento extends StatefulWidget {
   const Orcamento({super.key});
-
   @override
   State<Orcamento> createState() => _OrcamentoState();
 }
 
 class _OrcamentoState extends State<Orcamento> {
-  final TextEditingController convidados = TextEditingController();
-  bool? selecionado = false;
+  final _formKey = GlobalKey<FormState>();
+  final _convidados = TextEditingController(text: '50');
+  final _cliente = TextEditingController();
+  final _dataEvento = TextEditingController();
+  RegiaoEvento _regiao = RegiaoEvento.proximidades;
+  OrcamentoResultado? _resultado;
 
-  final double precoPizza = 35.9;
-  final double precoGarcom = 150;
-  final double precoPizzaiolo = 150;
-  final double deslocamento = 80;
-  final double gas = 60;
-
-  int garcom = 0;
-  int garcomBebida = 0;
-  int pizzaiolo = 0;
-  double quantidadePizzas = 0;
-
-  double subtotalPizza = 0;
-  double subtotalGarcom = 0;
-  double subtotalGarcomBebida = 0;
-  double subtotalPizzaiolo = 0;
-
-  int _indiceAtual = 2;
-
-  void _navegar(int index) {
-    setState(() {
-      _indiceAtual = index;
-    });
-
-    switch (index) {
-      case 0:
-        Navigator.pushNamed(context, '/');
-        break;
-      case 1:
-        Navigator.pushNamed(context, '/cardapio');
-        break;
-      case 2:
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/fotos');
-        break;
-      case 4:
-        Navigator.pushNamed(context, '/funcionamento');
-        break;
-    }
+  @override
+  void dispose() {
+    _convidados.dispose();
+    _cliente.dispose();
+    _dataEvento.dispose();
+    super.dispose();
   }
 
-  void calcular(String convidadosStr) {
-    int invites = int.tryParse(convidadosStr) ?? 0;
-
-    if (invites < 30) {
-      _showInvalidoDialog();
-      return;
+  String _moeda(num valor) {
+    final partes = valor.toStringAsFixed(2).split('.');
+    final chars = partes.first.split('').reversed.toList();
+    final grupos = <String>[];
+    for (var i = 0; i < chars.length; i += 3) {
+      grupos.add(chars.skip(i).take(3).toList().reversed.join());
     }
-
-    _definirServicos(invites);
-    _calcularSubtotais(invites);
-
-    double calculoFinal = subtotalPizza +
-        subtotalGarcom +
-        subtotalGarcomBebida +
-        subtotalPizzaiolo +
-        deslocamento +
-        gas;
-
-    if (selecionado == true) {
-      _showResultadoDialogBebida(calculoFinal);
-    } else {
-      _showResultadoDialog(calculoFinal);
-    }
+    return 'R\$ ${grupos.reversed.join('.')},${partes.last}';
   }
 
-  void _definirServicos(int invites) {
-    if (selecionado == false) {
-      _atribuirGarcons(invites, bebida: false);
-    } else {
-      _atribuirGarcons(invites, bebida: true);
-    }
+  void _calcular() {
+    if (!_formKey.currentState!.validate()) return;
+    final convidados = int.parse(_convidados.text);
+    setState(
+        () => _resultado = OrcamentoCalculator.calcular(convidados, _regiao));
+    FocusScope.of(context).unfocus();
   }
 
-  void _atribuirGarcons(int invites, {required bool bebida}) {
-    if (invites <= 45) {
-      garcom = 1;
-      pizzaiolo = 1;
-      garcomBebida = bebida ? 1 : 0;
-    } else if (invites <= 80) {
-      garcom = 2;
-      pizzaiolo = 1;
-      garcomBebida = bebida ? 2 : 0;
-    } else if (invites <= 120) {
-      garcom = 3;
-      pizzaiolo = 2;
-      garcomBebida = bebida ? 3 : 0;
-    } else if (invites <= 160) {
-      garcom = 4;
-      pizzaiolo = 2;
-      garcomBebida = bebida ? 4 : 0;
-    } else if (invites <= 200) {
-      garcom = 5;
-      pizzaiolo = 3;
-      garcomBebida = bebida ? 5 : 0;
-    } else if (invites <= 250) {
-      garcom = 6;
-      pizzaiolo = 3;
-      garcomBebida = bebida ? 6 : 0;
-    } else {
-      garcom = 7;
-      pizzaiolo = 4;
-      garcomBebida = bebida ? 7 : 0;
-    }
-  }
+  Future<Uint8List> _criarPdf(PdfPageFormat format) async {
+    final resultado = _resultado!;
+    final logoBytes = await rootBundle.load('assets/images/logo_colorida.png');
+    final logo = pw.MemoryImage(logoBytes.buffer.asUint8List());
+    final pdf = pw.Document(
+        title: "Orçamento - Home's Pizzaria", author: "Home's Pizzaria");
+    final red = PdfColor.fromHex('#C6281C');
+    final green = PdfColor.fromHex('#176A3B');
+    final ink = PdfColor.fromHex('#241A17');
+    final line = PdfColor.fromHex('#E9DED3');
 
-  void _calcularSubtotais(int invites) {
-    quantidadePizzas = (invites * 6 / 8).ceilToDouble();
-    if (quantidadePizzas % 2 != 0) {
-      quantidadePizzas += 1;
-    }
-
-    // Calcula os subtotais
-    subtotalPizza = quantidadePizzas * precoPizza;
-    subtotalGarcom = garcom * precoGarcom;
-    subtotalGarcomBebida = garcomBebida * precoGarcom;
-    subtotalPizzaiolo = pizzaiolo * precoPizzaiolo;
-  }
-
- // Função para gerar o PDF com as cores do app
-  Future<void> gerarPDF() async {
-    final pdf = pw.Document();
-    pdf.addPage(pw.Page(
-      build: (pw.Context context) {
-        return pw.Center( // Centraliza o conteúdo
-          child: pw.Column(
-            mainAxisAlignment: pw.MainAxisAlignment.center,
-            crossAxisAlignment: pw.CrossAxisAlignment.center,
-            children: [
-              pw.Container(
-                padding: pw.EdgeInsets.all(10),
-                decoration: pw.BoxDecoration(
-                  color: PdfColor.fromHex('#800000'), // Cor de fundo vermelha
-                  borderRadius: pw.BorderRadius.circular(10),
-                ),
-                child: pw.Text(
-                  'Orçamento Pizzaria',
-                  style: pw.TextStyle(fontSize: 30, color: PdfColors.white),
-                ),
-              ),
-              pw.SizedBox(height: 20),
-              pw.Text('Número de Convidados: ${convidados.text}', style: pw.TextStyle(fontSize: 18, color: PdfColors.black)),
-              pw.SizedBox(height: 10),
-              pw.Text('Quantidade de Pizzas: ${quantidadePizzas.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 18, color: PdfColors.black)),
-              pw.SizedBox(height: 10),
-              pw.Text('Subtotal Pizza: R\$${subtotalPizza.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 18, color: PdfColors.black)),
-              pw.SizedBox(height: 10),
-              pw.Text('Garçom(s): $garcom', style: pw.TextStyle(fontSize: 18, color: PdfColors.black)),
-              pw.SizedBox(height: 10),
-              pw.Text('Subtotal Garçom: R\$${subtotalGarcom.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 18, color: PdfColors.black)),
-              pw.SizedBox(height: 10),
-              pw.Text('Pizzaiolo(s): $pizzaiolo', style: pw.TextStyle(fontSize: 18, color: PdfColors.black)),
-              pw.SizedBox(height: 10),
-              pw.Text('Subtotal Pizzaiolo: R\$${subtotalPizzaiolo.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 18, color: PdfColors.black)),
-              pw.SizedBox(height: 10),
-              pw.Text('Deslocamento: R\$${deslocamento.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 18, color: PdfColors.black)),
-              pw.SizedBox(height: 10),
-              pw.Text('Gás: R\$${gas.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 18, color: PdfColors.black)),
-              pw.SizedBox(height: 20),
-              pw.Divider(color: PdfColors.black), // Linha separadora
-              pw.SizedBox(height: 20),
-              pw.Text('Custo Total: R\$ ${(subtotalPizza + subtotalGarcom + subtotalPizzaiolo + deslocamento + gas).toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#800000'))),
-            ],
-          ),
+    pw.Widget row(String label, String value, {bool strong = false}) =>
+        pw.Padding(
+          padding: const pw.EdgeInsets.symmetric(vertical: 8),
+          child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Expanded(
+                    child: pw.Text(label,
+                        style: pw.TextStyle(
+                            color: ink,
+                            fontSize: 11,
+                            fontWeight: strong
+                                ? pw.FontWeight.bold
+                                : pw.FontWeight.normal))),
+                pw.Text(value,
+                    style: pw.TextStyle(
+                        color: strong ? red : ink,
+                        fontSize: strong ? 14 : 11,
+                        fontWeight: strong
+                            ? pw.FontWeight.bold
+                            : pw.FontWeight.normal)),
+              ]),
         );
-      },
+
+    pdf.addPage(pw.Page(
+      pageFormat: format,
+      margin: const pw.EdgeInsets.all(36),
+      build: (_) =>
+          pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+        pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
+          pw.Image(logo, width: 104, height: 104, fit: pw.BoxFit.contain),
+          pw.SizedBox(width: 20),
+          pw.Expanded(
+              child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                pw.Text('ORÇAMENTO',
+                    style: pw.TextStyle(
+                        color: red,
+                        fontSize: 11,
+                        fontWeight: pw.FontWeight.bold,
+                        letterSpacing: 2)),
+                pw.SizedBox(height: 5),
+                pw.Text("Home's Pizzaria",
+                    style: pw.TextStyle(
+                        color: ink,
+                        fontSize: 25,
+                        fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 4),
+                pw.Text('Rodízio de pizza no seu evento',
+                    style: const pw.TextStyle(
+                        color: PdfColors.grey700, fontSize: 11)),
+              ])),
+        ]),
+        pw.SizedBox(height: 26),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(18),
+          decoration: pw.BoxDecoration(
+              color: PdfColor.fromHex('#FFF8EC'),
+              borderRadius: pw.BorderRadius.circular(10)),
+          child: pw.Row(children: [
+            pw.Expanded(
+                child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                  pw.Text('CLIENTE',
+                      style: pw.TextStyle(
+                          color: PdfColors.grey700,
+                          fontSize: 8,
+                          fontWeight: pw.FontWeight.bold)),
+                  pw.SizedBox(height: 4),
+                  pw.Text(
+                      _cliente.text.trim().isEmpty
+                          ? 'Não informado'
+                          : _cliente.text.trim(),
+                      style: pw.TextStyle(
+                          color: ink,
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold)),
+                ])),
+            pw.Expanded(
+                child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                  pw.Text('DATA DO EVENTO',
+                      style: pw.TextStyle(
+                          color: PdfColors.grey700,
+                          fontSize: 8,
+                          fontWeight: pw.FontWeight.bold)),
+                  pw.SizedBox(height: 4),
+                  pw.Text(
+                      _dataEvento.text.trim().isEmpty
+                          ? 'A combinar'
+                          : _dataEvento.text.trim(),
+                      style: pw.TextStyle(
+                          color: ink,
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold)),
+                ])),
+          ]),
+        ),
+        pw.SizedBox(height: 24),
+        pw.Text('Detalhamento',
+            style: pw.TextStyle(
+                color: ink, fontSize: 18, fontWeight: pw.FontWeight.bold)),
+        pw.SizedBox(height: 10),
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: line),
+              borderRadius: pw.BorderRadius.circular(10)),
+          child: pw.Column(children: [
+            row('${resultado.convidados} pessoas x ${_moeda(OrcamentoCalculator.valorPorPessoa)}',
+                _moeda(resultado.valorPessoas)),
+            pw.Divider(color: line),
+            row('${resultado.quantidadeGarcons} garçom(ns) x ${_moeda(OrcamentoCalculator.valorPorGarcom)}',
+                _moeda(resultado.valorGarcons)),
+            pw.Divider(color: line),
+            row('Deslocamento', _moeda(resultado.regiao.deslocamento)),
+            pw.Divider(color: line, thickness: 1.3),
+            row('VALOR TOTAL', _moeda(resultado.total), strong: true),
+          ]),
+        ),
+        pw.SizedBox(height: 22),
+        pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.all(16),
+          decoration: pw.BoxDecoration(
+              color: green, borderRadius: pw.BorderRadius.circular(10)),
+          child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('O que está incluído',
+                    style: pw.TextStyle(
+                        color: PdfColors.white,
+                        fontSize: 13,
+                        fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 8),
+                pw.Text(
+                    'Rodízio no local, ingredientes, massas, forno, gás, guardanapos e equipe calculada para o evento.',
+                    style: const pw.TextStyle(
+                        color: PdfColors.white, fontSize: 10, lineSpacing: 3)),
+              ]),
+        ),
+        pw.Spacer(),
+        pw.Divider(color: line),
+        pw.SizedBox(height: 8),
+        pw.Text(
+            'Orçamento sujeito à confirmação de disponibilidade e dos dados do evento. Fale conosco para reservar a data.',
+            style: const pw.TextStyle(
+                color: PdfColors.grey700, fontSize: 8, lineSpacing: 2)),
+        pw.SizedBox(height: 7),
+        pw.Text('WhatsApp: (31) 9539-6402  |  Instagram: @pizzaria_homes',
+            style: pw.TextStyle(
+                color: red, fontSize: 9, fontWeight: pw.FontWeight.bold)),
+      ]),
     ));
-
-    // Salva o PDF como arquivo
-    final output = await getTemporaryDirectory();
-    final file = File("${output.path}/orcamento.pdf");
-    await file.writeAsBytes(await pdf.save());
-    Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
+    return pdf.save();
   }
-
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14.0),
-                color: const Color(0xFF800000),
+    return AppShell(
+      currentIndex: 2,
+      child: CustomScrollView(slivers: [
+        const SliverToBoxAdapter(
+            child: PageHeader(
+                eyebrow: 'Simulação rápida',
+                title: 'Monte seu orçamento',
+                subtitle:
+                    'Informe os dados do evento. O número de garçons é calculado automaticamente: um profissional a cada 50 pessoas.')),
+        SliverToBoxAdapter(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 980),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 42),
+                child: LayoutBuilder(builder: (context, constraints) {
+                  final wide = constraints.maxWidth >= 760;
+                  final form = _FormCard(
+                    formKey: _formKey,
+                    convidados: _convidados,
+                    cliente: _cliente,
+                    dataEvento: _dataEvento,
+                    regiao: _regiao,
+                    onRegiao: (value) => setState(() => _regiao = value),
+                    onCalcular: _calcular,
+                  );
+                  final result = _ResultCard(
+                      resultado: _resultado,
+                      moeda: _moeda,
+                      onPdf: _resultado == null
+                          ? null
+                          : () => Printing.layoutPdf(
+                              onLayout: _criarPdf,
+                              name: 'orcamento-homes-pizzaria.pdf'));
+                  return wide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                              Expanded(child: form),
+                              const SizedBox(width: 18),
+                              Expanded(child: result)
+                            ])
+                      : Column(
+                          children: [form, const SizedBox(height: 18), result]);
+                }),
               ),
-              SizedBox(height: 90),
-              Text(
-                'ORÇAMENTO',
-                style: GoogleFonts.gloriaHallelujah(
-                  color: Colors.black,
-                  fontSize: 30,
-                ),
-              ),
-              SizedBox(height: 90),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Container(
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: const Color.fromARGB(255, 223, 223, 223)),
-                  child: TextField(
-                    controller: convidados,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 30, vertical: 8),
-                      labelText: 'Insira o número de convidados',
-                      labelStyle: TextStyle(color: Colors.black),
-                      border: InputBorder.none,
-                    ),
-                    style: const TextStyle(color: Colors.black),
-                    cursorColor: Color(0xFF800000),
-                    maxLength: 3,
-                    maxLengthEnforcement: MaxLengthEnforcement.none,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+class _FormCard extends StatelessWidget {
+  const _FormCard(
+      {required this.formKey,
+      required this.convidados,
+      required this.cliente,
+      required this.dataEvento,
+      required this.regiao,
+      required this.onRegiao,
+      required this.onCalcular});
+  final GlobalKey<FormState> formKey;
+  final TextEditingController convidados;
+  final TextEditingController cliente;
+  final TextEditingController dataEvento;
+  final RegiaoEvento regiao;
+  final ValueChanged<RegiaoEvento> onRegiao;
+  final VoidCallback onCalcular;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Form(
+              key: formKey,
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Gostaria de Garçom para bebidas?',
-                      style: GoogleFonts.robotoCondensed(
-                          color: Colors.black, fontSize: 16),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Checkbox(
-                          value: selecionado,
-                          activeColor: const Color(0xFF800000),
-                          onChanged: (valor) =>
-                              setState(() => selecionado = valor),
-                        ),
-                        const Text('Sim'),
-                        Checkbox(
-                          value: !selecionado!,
-                          activeColor: const Color(0xFF800000),
-                          onChanged: (valor) =>
-                              setState(() => selecionado = !valor!),
-                        ),
-                        const Text('Não'),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    ElevatedButton(
-                      onPressed: () {
-                        calcular(convidados.text);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF800000),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 40, vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Text(
-                        'Calcular',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
+                    Text('Dados do evento',
+                        style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 18),
+                    TextFormField(
+                        controller: convidados,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
+                        decoration: const InputDecoration(
+                            labelText: 'Número de convidados',
+                            prefixIcon: Icon(Icons.groups_outlined)),
+                        validator: (value) {
+                          final numero = int.tryParse(value ?? '');
+                          if (numero == null) {
+                            return 'Informe o número de convidados';
+                          }
+                          if (numero < OrcamentoCalculator.minimoConvidados) {
+                            return 'Mínimo de ${OrcamentoCalculator.minimoConvidados} pessoas';
+                          }
+                          return null;
+                        }),
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<RegiaoEvento>(
+                        initialValue: regiao,
+                        decoration: const InputDecoration(
+                            labelText: 'Região do evento',
+                            prefixIcon: Icon(Icons.location_on_outlined)),
+                        items: RegiaoEvento.values
+                            .map((item) => DropdownMenuItem(
+                                value: item, child: Text(item.label)))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) onRegiao(value);
+                        }),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                        controller: cliente,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                            labelText: 'Nome do cliente (opcional)',
+                            prefixIcon: Icon(Icons.person_outline))),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                        controller: dataEvento,
+                        decoration: const InputDecoration(
+                            labelText: 'Data do evento (opcional)',
+                            hintText: 'Ex.: 15/12/2026',
+                            prefixIcon: Icon(Icons.calendar_today_outlined))),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                            onPressed: onCalcular,
+                            icon: const Icon(Icons.calculate_outlined),
+                            label: const Text('Calcular orçamento'))),
+                  ])),
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _indiceAtual,
-        onTap: _navegar,
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF800000),
-        unselectedItemColor: const Color(0xFF800000),
-        selectedLabelStyle: const TextStyle(fontSize: 14),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
-        iconSize: 30,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Início'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.restaurant_menu), label: 'Cardápio'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.payment), label: 'Orçamento'),
-          BottomNavigationBarItem(icon: Icon(Icons.photo), label: 'Fotos'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long), label: 'Funcionamento'),
-        ],
-      ),
-    );
-  }
+      );
+}
 
-  Widget _infoBox() {
-    return Container(
-      padding: const EdgeInsets.all(7),
-      decoration: BoxDecoration(
-        color: Colors.amber[300],
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info, color: Colors.white),
-          const SizedBox(width: 5),
-          const Expanded(
-            child: Text(
-              ' Caso queria alguma mudança,\n falar com o contratante',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+class _ResultCard extends StatelessWidget {
+  const _ResultCard(
+      {required this.resultado, required this.moeda, required this.onPdf});
+  final OrcamentoResultado? resultado;
+  final String Function(num) moeda;
+  final VoidCallback? onPdf;
 
-  Widget _linha(String descricao, double subtotal) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.done, color: Colors.green),
+  @override
+  Widget build(BuildContext context) {
+    if (resultado == null) {
+      return Card(
+          child: Padding(
+              padding: const EdgeInsets.all(30),
+              child: Column(children: [
+                Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                        color: AppColors.green.withValues(alpha: .1),
+                        shape: BoxShape.circle),
+                    child: const Icon(Icons.receipt_long_outlined,
+                        color: AppColors.green, size: 34)),
+                const SizedBox(height: 18),
+                Text('Seu resumo aparece aqui',
+                    style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                const Text(
+                    'Preencha os dados ao lado para ver o valor detalhado.',
+                    textAlign: TextAlign.center),
+              ])));
+    }
+    final r = resultado!;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('ORÇAMENTO ESTIMADO',
+              style: TextStyle(
+                  color: AppColors.green,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2)),
+          const SizedBox(height: 7),
+          Text(moeda(r.total),
+              style: Theme.of(context)
+                  .textTheme
+                  .displaySmall
+                  ?.copyWith(color: AppColors.red)),
+          const SizedBox(height: 22),
+          _line(
+              '${r.convidados} pessoas × ${moeda(OrcamentoCalculator.valorPorPessoa)}',
+              moeda(r.valorPessoas)),
+          _line(
+              '${r.quantidadeGarcons} garçom(ns) × ${moeda(OrcamentoCalculator.valorPorGarcom)}',
+              moeda(r.valorGarcons)),
+          _line(
+              'Deslocamento • ${r.regiao.label}', moeda(r.regiao.deslocamento)),
+          const Divider(height: 30),
+          const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(Icons.check_circle, color: AppColors.green, size: 20),
+            SizedBox(width: 9),
             Expanded(
-                child:
-                    Text(descricao, style: const TextStyle(fontSize: 18)))
-          ],
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.arrow_forward, color: Colors.green),
-            Text(' SubTotal: R\$${subtotal.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 18))
-          ],
-        ),
-        const SizedBox(height: 10),
-      ],
-    );
-  }
-
-  void _showResultadoDialog(double total) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Valor do Orçamento',
-            style: GoogleFonts.gloriaHallelujah(fontSize: 25)),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              _infoBox(),
-              const SizedBox(height: 15),
-              _linha(
-                  '${quantidadePizzas.toStringAsFixed(0)} pizzas à R\$${precoPizza.toStringAsFixed(2)}',
-                  subtotalPizza),
-              _linha(
-                  '$garcom garçom(s) exclusivos para pizza à R\$${precoGarcom.toStringAsFixed(2)}',
-                  subtotalGarcom),
-              _linha(
-                  '$pizzaiolo pizzaiolo(s) à R\$${precoPizzaiolo.toStringAsFixed(2)}',
-                  subtotalPizzaiolo),
-              Row(
-                children: [
-                  const Icon(Icons.done, color: Colors.green),
-                  const Text(' Deslocamento à R\$80.00',
-                      style: TextStyle(fontSize: 18)),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(Icons.done, color: Colors.green),
-                  const Text(' Gás à R\$50.00',
-                      style: TextStyle(fontSize: 18)),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Text('O custo total é de:', style: const TextStyle(fontSize: 18)),
-              Text('R\$ ${total.toStringAsFixed(2)}',
-                  style: const TextStyle(fontSize: 23, color: Colors.green)),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: Colors.black)),
-          ),
-          ElevatedButton(
-                      onPressed: gerarPDF,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF800000),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 40, vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Text(
-                        'Gerar PDF',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
-        ],
+                child: Text(
+                    'Inclui estrutura, ingredientes, forno, gás, guardanapos e serviço no local.'))
+          ]),
+          const SizedBox(height: 20),
+          SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                  onPressed: onPdf,
+                  icon: const Icon(Icons.picture_as_pdf_outlined),
+                  label: const Text('Gerar orçamento em PDF'),
+                  style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 54),
+                      foregroundColor: AppColors.red,
+                      side: const BorderSide(color: AppColors.red),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16))))),
+          const SizedBox(height: 10),
+          const Text(
+              'Valor estimado. A reserva depende da confirmação da data e do endereço.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: AppColors.muted)),
+        ]),
       ),
     );
   }
 
-  void _showResultadoDialogBebida(double total) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Valor do Orçamento',
-            style: GoogleFonts.gloriaHallelujah(fontSize: 25)),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              _infoBox(),
-              const SizedBox(height: 15),
-              _linha(
-                  '${quantidadePizzas.toStringAsFixed(0)} pizzas à R\$${precoPizza.toStringAsFixed(2)}',
-                  subtotalPizza),
-              _linha(
-                  '$garcom garçom(s) exclusivos para pizza à R\$${precoGarcom.toStringAsFixed(2)}',
-                  subtotalGarcom),
-              _linha(
-                  '$garcomBebida garçom(s) exclusivos para bebida à R\$${precoGarcom.toStringAsFixed(2)}',
-                  subtotalGarcomBebida),
-              _linha(
-                  '$pizzaiolo pizzaiolo(s) à R\$${precoPizzaiolo.toStringAsFixed(2)}',
-                  subtotalPizzaiolo),
-              Row(
-                children: [
-                  const Icon(Icons.done, color: Colors.green),
-                  const Text(' Deslocamento à R\$80.00',
-                      style: TextStyle(fontSize: 18)),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(Icons.done, color: Colors.green),
-                  const Text(' Gás à R\$50.00',
-                      style: TextStyle(fontSize: 18)),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Text('O custo total é de:', style: const TextStyle(fontSize: 18)),
-              Text('R\$ ${total.toStringAsFixed(2)}',
-                  style: const TextStyle(fontSize: 23, color: Colors.green)),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: Colors.black,),
-            ),
-          ),
-          ElevatedButton(
-                      onPressed: gerarPDF,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF800000),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 40, vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Text(
-                        'Gerar PDF',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
-        ],
-      ),
-    );
-  }
-
-  void _showInvalidoDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Valor do Orçamento',
-            style: GoogleFonts.gloriaHallelujah(fontSize: 25)),
-        content: const Text('O evento é no mínimo para 30 pessoas',
-            style: TextStyle(fontSize: 17)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: Color(0xFF800000))),
-          ),
-
-        ],
-      ),
-    );
-  }
+  Widget _line(String label, String value) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(child: Text(label)),
+        const SizedBox(width: 10),
+        Text(value,
+            style: const TextStyle(
+                color: AppColors.ink, fontWeight: FontWeight.w800))
+      ]));
 }

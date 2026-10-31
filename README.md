@@ -1,16 +1,15 @@
-# flutter_application_1
+# Home's Pizzaria
 
-A new Flutter project.
+Aplicativo Flutter da Home's Pizzaria, com cardápio, orçamento em PDF e
+controle de despesas por categoria.
 
-## Getting Started
+## Armazenamento financeiro
 
-This project is a starting point for a Flutter application.
+Entradas de eventos e despesas são armazenadas na coleção `lancamentos` do
+Cloud Firestore, no projeto `pizzaria-85c83`.
 
-A few resources to get you started if this is your first Flutter project:
+Não há tela de login. O aplicativo abre uma sessão anônima automática apenas
+para autorizar o Firestore. Android e Web usam a configuração gerada em
+`lib/firebase_options.dart`.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+O dashboard apresenta entradas, despesas, saldo e gastos por categoria.

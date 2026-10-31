@@ -1,316 +1,150 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
-import 'package:pdf/pdf.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+import 'app_shell.dart';
+import 'app_theme.dart';
 
-class Funcionamento extends StatefulWidget {
-  const Funcionamento({Key? key}) : super(key: key);
+class Funcionamento extends StatelessWidget {
+  const Funcionamento({super.key});
 
-  @override
-  State<Funcionamento> createState() => _FuncionamentoState();
-}
-
-class _FuncionamentoState extends State<Funcionamento> {
-  int _indiceAtual = 4; // Página atual: Funcionamento
-
-  void _navegar(int index) {
-    setState(() {
-      _indiceAtual = index;
-    });
-
-    switch (index) {
-      case 0:
-        Navigator.pushNamed(context, '/');
-        break;
-      case 1:
-        Navigator.pushNamed(context, '/cardapio');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/orcamento');
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/fotos');
-        break;
-      case 4:
-        // Tela atual
-        break;
-    }
-  }
+  static const faqs = [
+    (
+      'Como as pizzas são servidas?',
+      'Servimos as fatias em guardanapos próprios, já incluídos. Se preferir pratos e talheres, eles devem ser fornecidos pelo contratante.'
+    ),
+    (
+      'O que a Home’s leva?',
+      'Levamos massas, ingredientes, forno, gás, utensílios, guardanapos e toda a estrutura necessária para preparar e servir as pizzas.'
+    ),
+    (
+      'Como funciona a equipe?',
+      'O orçamento inclui um garçom a cada 50 convidados. A quantidade é calculada automaticamente para manter o atendimento ágil.'
+    ),
+    (
+      'Quanto tempo dura o evento?',
+      'O serviço tem duração de até 4 horas a partir do início do rodízio. A equipe chega antes para organizar a estrutura.'
+    ),
+    (
+      'Qual é a forma de pagamento?',
+      'A forma de pagamento e a reserva da data são confirmadas diretamente com a equipe pelo WhatsApp.'
+    ),
+  ];
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(14.0),
-              color: const Color(0xFF800000),
-              child: Text(
-                'Funcionamento',
-                style: GoogleFonts.gloriaHallelujah(
-                  color: Colors.white,
-                  fontSize: 25,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
+  Widget build(BuildContext context) => AppShell(
+        currentIndex: 4,
+        child: CustomScrollView(slivers: [
+          const SliverToBoxAdapter(
+              child: PageHeader(
+                  eyebrow: 'Do forno à mesa',
+                  title: 'Como funciona',
+                  subtitle:
+                      'Você cuida dos convidados. A gente leva a pizzaria até o seu evento.')),
+          SliverToBoxAdapter(
+              child: Center(
+                  child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 42),
+              child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Resumo',
-                      style: GoogleFonts.gloriaHallelujah(
-                        color: Colors.black,
-                        fontSize: 25,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildCard(
-                      'A HOME´S PIZZARIA LEVA PARA SEU EVENTO TODA A ESTRUTURA PARA REALIZAR UM TRABALHO DE QUALIDADE PARA VOCÊ E SEUS CONVIDADOS.\n\nLEVAMOS AS MASSAS PRÉ-ASSADAS, MONTAMOS E ASSAMOS AS PIZZAS NO LOCAL PARA SER SERVIDAS.\n\nTAMBÉM LEVAMOS TODOS OS INGREDIENTES PARA FAZER TODOS OS SABORES, CONFORME O CÁRDAPIO.',
-                    ),
-                    const SizedBox(height: 40),
-                    Text(
-                      'Perguntas frequentes',
-                      style: GoogleFonts.gloriaHallelujah(
-                        color: Colors.black,
-                        fontSize: 25,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildQuestion(
-                      'COMO AS PIZZAS SÃO\nSERVIDAS?',
-                      'AS PIZZAS SERÃO SERVIDAS EM GUARDANAPOS ESPECIAIS, QUE JÁ ESTÃO INCLUSOS NO ORÇAMENTO.\nPODENDO TAMBÉM SEREM SERVIDAS EM PRATOS E TALHERES, QUE DEVERÃO SER FORNECIDOS PELO CONTRATANTE.',
-                    ),
-                    _buildQuestion(
-                      'O QUE LEVAMOS PARA O\nEVENTO?',
-                      'LEVAMOS PARA O EVENTO TODO O MATERIAL NECESSÁRIO PARA A REALIZAÇÃO DO MESMO, COMO FORNO PARA ASSAR, GÁS, GUARDANAPOS, ETC.',
-                    ),
-                    _buildQuestion(
-                      'O QUE OS GARÇONS PODEM\nSERVIR?',
-                      'OS GARÇONS SÃO EXCLUSIVOS PARA SERVIR AS PIZZAS. CASO QUEIRA, PODEM SER CONTRATADOS GARÇONS PARA BEBIDAS À PARTE.',
-                    ),
-                    _buildQuestion(
-                      'SÃO LEVADAS PIZZAS\nRESERVAS?',
-                      'SIM, LEVAMOS 10 PIZZAS A MAIS PARA RESERVA. CASO SEJAM UTILIZADAS, SERÁ COBRADO À PARTE R\$35,90 CADA. AS PIZZAS NÃO UTILIZADAS SERÃO EMBALADAS E ENTREGUES PARA O CONTRATANTE.',
-                    ),
-                    _buildQuestion(
-                      'QUANTAS HORAS DE EVENTO?',
-                      'SÃO 4 HORAS DE EVENTO A PARTIR DO MOMENTO EM QUE COMEÇAMOS A SERVIR. CHEGAMOS COM 1 HORA DE ANTECEDÊNCIA PARA MONTAGEM.',
-                    ),
-                    _buildQuestion(
-                      'QUAIS AS FORMAS DE PAGAMENTO?',
-                      'O PAGAMENTO DEVE SER REALIZADO APÓS O EVENTO POR PIX, DINHEIRO OU CARTÃO (COM ACRÉSCIMO DA TAXA DA MAQUININHA DE APROXIMADAMENTE 4%).',
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        _gerarPDF();
-                      },
-                      child: const Text('Gerar PDF'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white, backgroundColor: const Color(0xFF800000),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                    Text('Uma experiência completa',
+                        style: Theme.of(context).textTheme.headlineMedium),
+                    const SizedBox(height: 10),
+                    const Text(
+                        'As massas chegam pré-assadas, e as pizzas são montadas e finalizadas no local. Assim, cada sabor chega quentinho aos seus convidados.'),
+                    const SizedBox(height: 26),
+                    const _Step(
+                        number: '01',
+                        title: 'Você simula',
+                        text:
+                            'Escolhe a região e informa o número de pessoas para receber o valor estimado.'),
+                    const _Step(
+                        number: '02',
+                        title: 'A gente confirma',
+                        text:
+                            'Alinhamos data, endereço, horário e detalhes do evento pelo WhatsApp.'),
+                    const _Step(
+                        number: '03',
+                        title: 'Levamos tudo',
+                        text:
+                            'Nossa equipe chega com antecedência para montar forno, ingredientes e área de serviço.'),
+                    const _Step(
+                        number: '04',
+                        title: 'O rodízio começa',
+                        text:
+                            'Preparamos pizzas salgadas e doces no local por até quatro horas de evento.'),
+                    const SizedBox(height: 30),
+                    Text('Dúvidas frequentes',
+                        style: Theme.of(context).textTheme.headlineMedium),
+                    const SizedBox(height: 14),
+                    ...faqs.map((item) => Card(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          child: ExpansionTile(
+                            tilePadding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 5),
+                            childrenPadding:
+                                const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                            iconColor: AppColors.red,
+                            title: Text(item.$1,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w800)),
+                            children: [
+                              Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(item.$2))
+                            ],
+                          ),
+                        )),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/orcamento'),
+                            icon: const Icon(Icons.calculate_outlined),
+                            label: const Text('Fazer meu orçamento'))),
+                  ]),
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _indiceAtual,
-        onTap: _navegar,
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF800000),
-        unselectedItemColor: const Color(0xFF800000),
-        selectedLabelStyle: const TextStyle(fontSize: 14),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
-        iconSize: 30,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Início'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.restaurant_menu), label: 'Cardápio'),
-          BottomNavigationBarItem(icon: Icon(Icons.payment), label: 'Orçamento'),
-          BottomNavigationBarItem(icon: Icon(Icons.photo), label: 'Fotos'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long), label: 'Funcionamento'),
-        ],
-      ),
-    );
-  }
+          ))),
+        ]),
+      );
+}
 
-  Widget _buildCard(String text) {
-    return Container(
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 255, 255, 255),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.black),
-      ),
-    );
-  }
-
-  Widget _buildQuestion(String question, String answer) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.arrow_right, color: Color(0xFF800000)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  question,
-                  style: GoogleFonts.leagueSpartan(
-                    color: const Color(0xFF800000),
-                    fontSize: 18,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            answer,
-            style: GoogleFonts.leagueSpartan(
-              color: Colors.black,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _gerarPDF() async {
-    final pdf = pw.Document();
-
-    // Adicionando a primeira página
-    pdf.addPage(
-      pw.Page(
-        build: (pw.Context context) {
-          return pw.Column(
-            children: [
-              pw.Text(
-                'Home´s Pizzaria',
-                style: pw.TextStyle(
-                  fontSize: 30,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColor.fromHex('#800000'),
-                ),
-              ),
-              pw.SizedBox(height: 20),
-              pw.Text(
-                'Resumo',
-                style: pw.TextStyle(
-                  fontSize: 20,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColor.fromHex('#000000'),
-                ),
-              ),
-              pw.SizedBox(height: 20),
-              pw.Text(
-                'A HOME´S PIZZARIA LEVA PARA SEU EVENTO TODA A ESTRUTURA PARA REALIZAR UM TRABALHO DE QUALIDADE PARA VOCÊ E SEUS CONVIDADOS.\n\nLEVAMOS AS MASSAS PRÉ-ASSADAS, MONTAMOS E ASSAMOS AS PIZZAS NO LOCAL PARA SER SERVIDAS.\n\nTAMBÉM LEVAMOS TODOS OS INGREDIENTES PARA FAZER TODOS OS SABORES, CONFORME O CÁRDAPIO.',
-                style: pw.TextStyle(
-                  fontSize: 14,
-                  color: PdfColor.fromHex('#000000'),
-                ),
-              ),
-              // Adicionando perguntas frequentes ao PDF
-              pw.SizedBox(height: 20),
-              pw.Text('Perguntas frequentes', style: pw.TextStyle(fontSize: 20)),
-              
-              pw.SizedBox(height: 20),
-              pw.Text('COMO AS PIZZAS SÃO SERVIDAS?', style: pw.TextStyle(fontSize: 16)),
-              pw.Text('AS PIZZAS SERÃO SERVIDAS EM GUARDANAPOS ESPECIAIS, QUE JÁ ESTÃO INCLUSOS NO ORÇAMENTO.\nPODENDO TAMBÉM SEREM SERVIDAS EM PRATOS E TALHERES, QUE DEVERÃO SER FORNECIDOS PELO CONTRATANTE.', style: pw.TextStyle(fontSize: 14)),
-              
-              pw.SizedBox(height: 20),
-              pw.Text('O QUE LEVAMOS PARA O EVENTO?', style: pw.TextStyle(fontSize: 16)),
-              pw.Text('LEVAMOS PARA O EVENTO TODO O MATERIAL NECESSÁRIO PARA A REALIZAÇÃO DO MESMO, COMO FORNO PARA ASSAR, GÁS, GUARDANAPOS, ETC.', style: pw.TextStyle(fontSize: 14)),
-              
-              pw.SizedBox(height: 20),
-              pw.Text('O QUE OS GARÇONS PODEM\nSERVIR?', style: pw.TextStyle(fontSize: 16)),
-              pw.Text('OS GARÇONS SÃO EXCLUSIVOS PARA SERVIR AS PIZZAS. CASO QUEIRA, PODEM SER CONTRATADOS GARÇONS PARA BEBIDAS À PARTE.', style: pw.TextStyle(fontSize: 14)),
-              
-              
-            
-              
-            ],
-          );
-        },
-      ),
-    );
-
-    pdf.addPage(
-      pw.Page(
-        build: (pw.Context context) {
-          return pw.Column(
-            children: [
-              pw.Text(
-                'Home´s Pizzaria',
-                style: pw.TextStyle(
-                  fontSize: 30,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColor.fromHex('#800000'),
-                ),
-              ),
-              pw.SizedBox(height: 20),
-              pw.Text('SÃO LEVADAS PIZZAS\nRESERVAS?', style: pw.TextStyle(fontSize: 16)),
-              pw.Text('SIM, LEVAMOS 10 PIZZAS A MAIS PARA RESERVA. CASO SEJAM UTILIZADAS, SERÁ COBRADO À PARTE R\$35,90 CADA. AS PIZZAS NÃO UTILIZADAS SERÃO EMBALADAS E ENTREGUES PARA O CONTRATANTE.', style: pw.TextStyle(fontSize: 14)),
-
-              
-              pw.SizedBox(height: 20),
-              pw.Text('QUANTAS HORAS DE EVENTO?', style: pw.TextStyle(fontSize: 16)),
-              pw.Text('SÃO 4 HORAS DE EVENTO A PARTIR DO MOMENTO EM QUE COMEÇAMOS A SERVIR. CHEGAMOS COM 1 HORA DE ANTECEDÊNCIA PARA MONTAGEM.', style: pw.TextStyle(fontSize: 14)),
-            
-              
-              pw.SizedBox(height: 20),
-              pw.Text('QUAIS AS FORMAS DE PAGAMENTO?', style: pw.TextStyle(fontSize: 16)),
-              pw.Text('O PAGAMENTO DEVE SER REALIZADO APÓS O EVENTO POR PIX, DINHEIRO OU CARTÃO (COM ACRÉSCIMO DA TAXA DA MAQUININHA DE APROXIMADAMENTE 4%).', style: pw.TextStyle(fontSize: 14)),
-            ],
-          );
-        },
-      ),
-    );
-
-    // Gerar o PDF
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save(),
-    );
-  }
+class _Step extends StatelessWidget {
+  const _Step({required this.number, required this.title, required this.text});
+  final String number;
+  final String title;
+  final String text;
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Card(
+            child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                          width: 48,
+                          height: 48,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                              color: AppColors.red,
+                              borderRadius: BorderRadius.circular(15)),
+                          child: Text(number,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900))),
+                      const SizedBox(width: 16),
+                      Expanded(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            Text(title,
+                                style: Theme.of(context).textTheme.titleLarge),
+                            const SizedBox(height: 5),
+                            Text(text)
+                          ])),
+                    ]))),
+      );
 }
