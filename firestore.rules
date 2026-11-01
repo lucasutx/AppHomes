@@ -54,9 +54,47 @@ service cloud.firestore {
         && request.resource.data.observacao.size() <= 500;
     }
 
+    function validEvent() {
+      return request.resource.data.keys().hasOnly([
+          'nome',
+          'telefone',
+          'endereco',
+          'convidados',
+          'dataHora',
+          'criadoEm',
+          'atualizadoEm'
+        ])
+        && request.resource.data.keys().hasAll([
+          'nome',
+          'telefone',
+          'endereco',
+          'convidados',
+          'dataHora',
+          'atualizadoEm'
+        ])
+        && request.resource.data.nome is string
+        && request.resource.data.nome.size() >= 2
+        && request.resource.data.nome.size() <= 120
+        && request.resource.data.telefone is string
+        && request.resource.data.telefone.size() >= 10
+        && request.resource.data.telefone.size() <= 30
+        && request.resource.data.endereco is string
+        && request.resource.data.endereco.size() >= 5
+        && request.resource.data.endereco.size() <= 300
+        && request.resource.data.convidados is int
+        && request.resource.data.convidados > 0
+        && request.resource.data.convidados <= 10000
+        && request.resource.data.dataHora is timestamp;
+    }
+
     match /lancamentos/{lancamentoId} {
       allow read, delete: if isSignedIn();
       allow create, update: if isSignedIn() && validEntry();
+    }
+
+    match /eventos/{eventoId} {
+      allow read, delete: if isSignedIn();
+      allow create, update: if isSignedIn() && validEvent();
     }
   }
 }

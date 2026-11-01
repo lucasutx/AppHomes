@@ -44,7 +44,9 @@ class _DespesasState extends State<Despesas> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Excluir lançamento?'),
-        content: Text('“${despesa.descricao}” será removida permanentemente.'),
+        content: Text(
+          '${despesa.categoria.label} de ${_moeda(despesa.valor)} será removido permanentemente.',
+        ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -76,7 +78,7 @@ class _DespesasState extends State<Despesas> {
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      currentIndex: 5,
+      currentIndex: 6,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _abrirFormulario,
         icon: const Icon(Icons.add),
@@ -415,7 +417,7 @@ class _GraficoCategorias extends StatelessWidget {
   }
 }
 
-class _Historico extends StatelessWidget {
+class _Historico extends StatefulWidget {
   const _Historico({
     required this.despesas,
     required this.onEditar,
@@ -427,67 +429,97 @@ class _Historico extends StatelessWidget {
   final ValueChanged<Despesa> onExcluir;
 
   @override
-  Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(22),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Lançamentos', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 5),
-            const Text('Toque em um lançamento para editar.'),
-            const SizedBox(height: 14),
-            if (despesas.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 42),
-                child: Center(
-                  child: Column(children: [
-                    Icon(Icons.receipt_long_outlined,
-                        color: AppColors.muted, size: 36),
-                    SizedBox(height: 10),
-                    Text('Nenhum lançamento cadastrado.'),
-                  ]),
-                ),
-              )
-            else
-              ...despesas.map((despesa) => Column(children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      onTap: () => onEditar(despesa),
-                      leading: CircleAvatar(
-                        backgroundColor:
-                            despesa.categoria.color.withValues(alpha: .12),
-                        child: Icon(despesa.categoria.icon,
-                            color: despesa.categoria.color, size: 20),
-                      ),
-                      title: Text(despesa.descricao,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w800)),
-                      subtitle: Text(
-                          '${despesa.tipo.label} · ${despesa.categoria.label} · ${_formatarData(despesa.data)}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                              '${despesa.tipo == TipoLancamento.entrada ? '+' : '-'} ${_moeda(despesa.valor)}',
-                              style: TextStyle(
-                                  color: despesa.tipo == TipoLancamento.entrada
-                                      ? AppColors.green
-                                      : AppColors.red,
-                                  fontWeight: FontWeight.w900)),
-                          IconButton(
-                            tooltip: 'Excluir',
-                            onPressed: () => onExcluir(despesa),
-                            icon: const Icon(Icons.delete_outline, size: 20),
-                          ),
-                        ],
-                      ),
+  State<_Historico> createState() => _HistoricoState();
+}
+
+class _HistoricoState extends State<_Historico> {
+  int _categoriaSelecionada = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    const categorias = CategoriaDespesa.values;
+    final lancamentos = _categoriaSelecionada == 0
+        ? widget.despesas
+        : widget.despesas
+            .where((item) =>
+                item.categoria == categorias[_categoriaSelecionada - 1])
+            .toList();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Lançamentos', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 5),
+          const Text('Selecione uma categoria e toque para editar.'),
+          const SizedBox(height: 14),
+          DefaultTabController(
+            length: categorias.length + 1,
+            initialIndex: _categoriaSelecionada,
+            child: TabBar(
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              onTap: (index) => setState(() => _categoriaSelecionada = index),
+              tabs: [
+                const Tab(text: 'Todos'),
+                ...categorias.map((categoria) => Tab(text: categoria.label)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (lancamentos.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 42),
+              child: Center(
+                child: Column(children: [
+                  Icon(Icons.receipt_long_outlined,
+                      color: AppColors.muted, size: 36),
+                  SizedBox(height: 10),
+                  Text('Nenhum lançamento nesta categoria.'),
+                ]),
+              ),
+            )
+          else
+            ...lancamentos.map((despesa) => Column(children: [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () => widget.onEditar(despesa),
+                    leading: CircleAvatar(
+                      backgroundColor:
+                          despesa.categoria.color.withValues(alpha: .12),
+                      child: Icon(despesa.categoria.icon,
+                          color: despesa.categoria.color, size: 20),
                     ),
-                    if (despesa != despesas.last) const Divider(height: 1),
-                  ])),
-          ]),
-        ),
-      );
+                    title: Text(despesa.categoria.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: Text(
+                        '${despesa.tipo.label} · ${_formatarData(despesa.data)}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                            '${despesa.tipo == TipoLancamento.entrada ? '+' : '-'} ${_moeda(despesa.valor)}',
+                            style: TextStyle(
+                                color: despesa.tipo == TipoLancamento.entrada
+                                    ? AppColors.green
+                                    : AppColors.red,
+                                fontWeight: FontWeight.w900)),
+                        IconButton(
+                          tooltip: 'Excluir',
+                          onPressed: () => widget.onExcluir(despesa),
+                          icon: const Icon(Icons.delete_outline, size: 20),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (despesa != lancamentos.last) const Divider(height: 1),
+                ])),
+        ]),
+      ),
+    );
+  }
 }
 
 class _DespesaForm extends StatefulWidget {
@@ -502,8 +534,6 @@ class _DespesaForm extends StatefulWidget {
 
 class _DespesaFormState extends State<_DespesaForm> {
   final _formKey = GlobalKey<FormState>();
-  late final _descricao =
-      TextEditingController(text: widget.despesa?.descricao);
   late final _valor = TextEditingController(
       text: widget.despesa == null
           ? ''
@@ -518,7 +548,6 @@ class _DespesaFormState extends State<_DespesaForm> {
 
   @override
   void dispose() {
-    _descricao.dispose();
     _valor.dispose();
     _observacao.dispose();
     super.dispose();
@@ -540,7 +569,7 @@ class _DespesaFormState extends State<_DespesaForm> {
     try {
       await widget.repository.salvar(Despesa(
         id: widget.despesa?.id ?? '',
-        descricao: _descricao.text.trim(),
+        descricao: widget.despesa?.descricao ?? _categoria.label,
         valor: _parseValor(_valor.text)!,
         tipo: _tipo,
         categoria: _categoria,
@@ -606,21 +635,6 @@ class _DespesaFormState extends State<_DespesaForm> {
                       });
                     },
                   ),
-                ),
-                const SizedBox(height: 14),
-                TextFormField(
-                  controller: _descricao,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: InputDecoration(
-                    labelText: 'Descrição',
-                    hintText: _tipo == TipoLancamento.entrada
-                        ? 'Ex.: Evento da Maria'
-                        : 'Ex.: Compra de mussarela',
-                    prefixIcon: const Icon(Icons.edit_note_outlined),
-                  ),
-                  validator: (value) => value == null || value.trim().isEmpty
-                      ? 'Informe uma descrição'
-                      : null,
                 ),
                 const SizedBox(height: 14),
                 TextFormField(

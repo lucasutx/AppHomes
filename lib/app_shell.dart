@@ -17,6 +17,7 @@ class AppShell extends StatelessWidget {
     '/orcamento',
     '/fotos',
     '/funcionamento',
+    '/agenda',
     '/despesas',
   ];
 
@@ -60,9 +61,13 @@ class AppShell extends StatelessWidget {
               selectedIcon: Icon(Icons.info),
               label: 'Como funciona'),
           NavigationDestination(
+              icon: Icon(Icons.calendar_month_outlined),
+              selectedIcon: Icon(Icons.calendar_month),
+              label: 'Agenda'),
+          NavigationDestination(
               icon: Icon(Icons.account_balance_wallet_outlined),
               selectedIcon: Icon(Icons.account_balance_wallet),
-              label: 'Despesas'),
+              label: 'Financeiro'),
         ],
       ),
     );

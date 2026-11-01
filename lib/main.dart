@@ -5,6 +5,7 @@ import 'app_theme.dart';
 import 'cardapio.dart';
 import 'despesas.dart';
 import 'despesas_repository.dart';
+import 'eventos.dart';
 import 'fotos.dart';
 import 'firebase_options.dart';
 import 'funcionamento.dart';
@@ -43,6 +44,7 @@ class MyApp extends StatelessWidget {
         '/cardapio': (_) => const Cardapio(),
         '/fotos': (_) => const Fotos(),
         '/orcamento': (_) => const Orcamento(),
+        '/agenda': (_) => const EventosAgenda(),
         '/despesas': (_) => const Despesas(),
       },
     );
