@@ -46,6 +46,7 @@ class Fotos extends StatelessWidget {
                     top: 10,
                     right: 10,
                     child: IconButton.filled(
+                        tooltip: 'Fechar foto',
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.close),
                         style: IconButton.styleFrom(
@@ -81,14 +82,23 @@ class Fotos extends StatelessWidget {
                     crossAxisSpacing: 8,
                     mainAxisSpacing: 8),
                 delegate: SliverChildBuilderDelegate(
-                    (context, index) => GestureDetector(
-                          onTap: () => _open(context, photos[index]),
-                          child: Hero(
-                              tag: photos[index],
-                              child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(18),
+                    (context, index) => Semantics(
+                          button: true,
+                          label: 'Abrir foto ${index + 1} de ${photos.length}',
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(18),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: () => _open(context, photos[index]),
+                              child: Hero(
+                                  tag: photos[index],
                                   child: Image.asset(photos[index],
-                                      fit: BoxFit.cover))),
+                                      fit: BoxFit.cover,
+                                      semanticLabel:
+                                          'Evento da Home\'s Pizzaria')),
+                            ),
+                          ),
                         ),
                     childCount: photos.length),
               );

@@ -79,54 +79,66 @@ class _CardapioState extends State<Cardapio> {
               constraints: const BoxConstraints(maxWidth: 1000),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 14),
-                child: Column(children: [
-                  TextField(
-                      onChanged: (value) => setState(() => _busca = value),
-                      decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.search),
-                          hintText: 'Buscar sabor ou ingrediente')),
-                  const SizedBox(height: 14),
-                  Row(children: [
-                    _Filter(
-                        label: 'Todos',
-                        selected: _doces == null,
-                        onTap: () => setState(() => _doces = null)),
-                    const SizedBox(width: 8),
-                    _Filter(
-                        label: 'Salgadas',
-                        selected: _doces == false,
-                        onTap: () => setState(() => _doces = false)),
-                    const SizedBox(width: 8),
-                    _Filter(
-                        label: 'Doces',
-                        selected: _doces == true,
-                        onTap: () => setState(() => _doces = true)),
-                  ]),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                          onChanged: (value) => setState(() => _busca = value),
+                          decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.search),
+                              hintText: 'Buscar sabor ou ingrediente')),
+                      const SizedBox(height: 14),
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        _Filter(
+                            label: 'Todos',
+                            selected: _doces == null,
+                            onTap: () => setState(() => _doces = null)),
+                        _Filter(
+                            label: 'Salgadas',
+                            selected: _doces == false,
+                            onTap: () => setState(() => _doces = false)),
+                        _Filter(
+                            label: 'Doces',
+                            selected: _doces == true,
+                            onTap: () => setState(() => _doces = true)),
+                      ]),
+                      const SizedBox(height: 12),
+                      Text(
+                        filtrados.length == 1
+                            ? '1 sabor encontrado'
+                            : '${filtrados.length} sabores encontrados',
+                        style: const TextStyle(
+                            color: AppColors.muted,
+                            fontWeight: FontWeight.w700),
+                      ),
+                    ]),
               ),
             ),
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-          sliver: SliverLayoutBuilder(builder: (context, constraints) {
-            final count = constraints.crossAxisExtent >= 900
-                ? 3
-                : constraints.crossAxisExtent >= 580
-                    ? 2
-                    : 1;
-            return SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: count,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  mainAxisExtent: 184),
-              delegate: SliverChildBuilderDelegate(
-                  (context, index) => _MenuCard(sabor: filtrados[index]),
-                  childCount: filtrados.length),
-            );
-          }),
-        ),
+        if (filtrados.isEmpty)
+          const SliverToBoxAdapter(child: _EmptyMenu())
+        else
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+            sliver: SliverLayoutBuilder(builder: (context, constraints) {
+              final count = constraints.crossAxisExtent >= 900
+                  ? 3
+                  : constraints.crossAxisExtent >= 580
+                      ? 2
+                      : 1;
+              return SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: count,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    mainAxisExtent: 204),
+                delegate: SliverChildBuilderDelegate(
+                    (context, index) => _MenuCard(sabor: filtrados[index]),
+                    childCount: filtrados.length),
+              );
+            }),
+          ),
       ]),
     );
   }
@@ -181,13 +193,52 @@ class _MenuCard extends StatelessWidget {
           ]),
           const SizedBox(height: 15),
           Text(sabor.nome,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 7),
           Text(sabor.ingredientes,
               maxLines: 3, overflow: TextOverflow.ellipsis),
         ]),
+      ),
+    );
+  }
+}
+
+class _EmptyMenu extends StatelessWidget {
+  const _EmptyMenu();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 30, 20, 48),
+      child: Center(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.search_off_rounded,
+                color: AppColors.muted,
+                size: 30,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Nenhum sabor encontrado',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Tente outro ingrediente ou escolha uma categoria diferente.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

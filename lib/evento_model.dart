@@ -38,3 +38,11 @@ class Evento {
     );
   }
 }
+
+DateTime normalizarHorarioEvento(DateTime dataHora) => DateTime(
+      dataHora.year,
+      dataHora.month,
+      dataHora.day,
+      dataHora.hour,
+      dataHora.minute,
+    );

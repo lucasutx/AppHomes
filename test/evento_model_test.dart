@@ -21,4 +21,12 @@ void main() {
     expect(evento.convidados, 80);
     expect(evento.dataHora, dataHora);
   });
+
+  test('normaliza horário para detectar eventos no mesmo minuto', () {
+    final horario = normalizarHorarioEvento(
+      DateTime(2026, 12, 20, 19, 30, 45, 900),
+    );
+
+    expect(horario, DateTime(2026, 12, 20, 19, 30));
+  });
 }

@@ -65,6 +65,31 @@ class _EventoFormState extends State<EventoForm> {
       _horario.minute,
     );
     try {
+      final conflito = await _repository.buscarConflito(
+        dataHora,
+        ignorarId: widget.evento?.id,
+      );
+      if (conflito != null) {
+        if (!mounted) return;
+        setState(() => _salvando = false);
+        await showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Horário indisponível'),
+            content: Text(
+              'Já existe um evento de ${conflito.nome} em '
+              '${_formatarData(dataHora)} às ${_formatarHorario(dataHora)}.',
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Escolher outro horário'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
       await _repository.salvar(Evento(
         id: widget.evento?.id ?? '',
         nome: _nome.text.trim(),
@@ -260,3 +285,6 @@ class _EventoFormState extends State<EventoForm> {
 
 String _formatarData(DateTime data) =>
     '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
+
+String _formatarHorario(DateTime data) =>
+    '${data.hour.toString().padLeft(2, '0')}:${data.minute.toString().padLeft(2, '0')}';

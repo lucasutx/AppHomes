@@ -20,6 +20,25 @@ class EventosRepository {
             .toList());
   }
 
+  Future<Evento?> buscarConflito(
+    DateTime dataHora, {
+    String? ignorarId,
+  }) async {
+    final inicio = normalizarHorarioEvento(dataHora);
+    final fim = inicio.add(const Duration(minutes: 1));
+    final snapshot = await _collection
+        .where('dataHora', isGreaterThanOrEqualTo: Timestamp.fromDate(inicio))
+        .where('dataHora', isLessThan: Timestamp.fromDate(fim))
+        .limit(2)
+        .get();
+    for (final doc in snapshot.docs) {
+      if (doc.id != ignorarId) {
+        return Evento.fromFirestore(doc.id, doc.data());
+      }
+    }
+    return null;
+  }
+
   Future<void> salvar(Evento evento) async {
     if (evento.id.isEmpty) {
       await _collection.add({
